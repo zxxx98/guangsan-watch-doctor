@@ -1,6 +1,6 @@
 {
   "name": "watch-doctor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "医院排班系统监听服务",
   "main": "dist/index.js",
   "scripts": {
