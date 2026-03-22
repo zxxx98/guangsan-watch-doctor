@@ -10,10 +10,10 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build
+RUN npm run build:server && npm run build:client
 
 RUN mkdir -p /app/data
 
 EXPOSE 3001
 
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

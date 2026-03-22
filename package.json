@@ -1,8 +1,8 @@
 {
   "name": "watch-doctor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "医院排班系统监听服务",
-  "main": "dist/server/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "ts-node-dev --respawn src/server/index.ts",
@@ -10,7 +10,7 @@
     "build": "npm run build:server && npm run build:client",
     "build:server": "tsc",
     "build:client": "vite build",
-    "start": "node dist/server/index.js",
+    "start": "node dist/index.js",
     "preview": "vite preview"
   },
   "dependencies": {
