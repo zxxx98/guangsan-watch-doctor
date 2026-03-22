@@ -1,0 +1,10 @@
+node_modules
+dist
+src
+.git
+*.md
+*.json
+!package.json
+pnpm-lock.yaml
+vite.config.ts
+tsconfig.json
