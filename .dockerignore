@@ -1,9 +1,13 @@
+# 忽略依赖包和本地构建产物
 node_modules
 dist
-src
 .git
+
+# 允许 src、tsconfig.json 等构建必须的文件
+# 不要在这里写 src！
+# 不要在这里写 tsconfig.json！
+# 不要在这里写 vite.config.ts！
+
+# 如果你想忽略一些说明文档，可以保留这些
 *.md
-*.json
-!package.json
-vite.config.ts
-tsconfig.json
+.gitignore
