@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { scheduleMonitorRouter } from './routes/scheduleMonitor';
 import { monitorService } from './services/monitorService';
 
@@ -12,12 +13,22 @@ app.use(express.json());
 
 app.use('/api/monitor', scheduleMonitorRouter);
 
-const clientPath = path.join(__dirname, '../../client');
-app.use(express.static(clientPath));
+const possiblePaths = [
+  path.join(__dirname, 'client'),
+  path.join(__dirname, '../client'),
+  path.join(__dirname, '../../client'),
+];
 
-app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(clientPath, 'index.html'));
-});
+const clientPath = possiblePaths.find(p => fs.existsSync(path.join(p, 'index.html')));
+
+if (clientPath) {
+  app.use(express.static(clientPath));
+  app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(clientPath, 'index.html'));
+  });
+} else {
+  console.warn('Client directory not found, static files will not be served');
+}
 
 const startServer = () => {
   app.listen(PORT, () => {

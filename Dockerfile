@@ -1,3 +1,13 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run bundle
+
 FROM node:20-alpine
 
 RUN apk add --no-cache tzdata wget
@@ -5,15 +15,12 @@ RUN apk add --no-cache tzdata wget
 WORKDIR /app
 
 COPY package*.json ./
+RUN npm ci --only=production
 
-RUN npm install
-
-COPY . .
-
-RUN npm run build:server && npm run build:client
+COPY --from=builder /app/dist ./dist
 
 RUN mkdir -p /app/data
 
 EXPOSE 3001
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/bundle.js"]
