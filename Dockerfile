@@ -16,10 +16,10 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/src/config.json ./dist/
+COPY --from=builder /app/src/config.json ./dist/src/
 
 RUN corepack enable && pnpm install --frozen-lockfile --prod
 
 EXPOSE 3001
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server/index.js"]
