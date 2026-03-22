@@ -1,0 +1,182 @@
+{
+  "code": 200,
+  "msg": "success",
+  "data": [
+    {
+      "doctorImgBase64": null,
+      "registAmt": null,
+      "feeType": null,
+      "scheduleStatusAll": "4",
+      "doctorSort": 0,
+      "titleCode": "",
+      "branchId": "02",
+      "deptId": "0001102103101",
+      "deptName": "产科专家门诊",
+      "doctorId": "1487",
+      "doctorName": "黄蓓",
+      "doctorTitle": "副主任医师",
+      "doctorDesc": "长期从事妇产科临床及教学工作,熟悉妇产科常见病、多发病的诊治。专业特长：围产医学、重症孕产妇救治。尤其是对妊娠期糖尿病、糖尿病合并妊娠、孕期体重管理有一定心得。",
+      "scheduleDate": "2026-03-27",
+      "scheduleDayOfWeek": "星期五",
+      "fee": "26.0",
+      "scheduleInfo2s": [
+        {
+          "consultationRoom": "V1",
+          "scheduleRemainNumber": "0",
+          "scheduleStatus": "4",
+          "scheduleId": "156632",
+          "scheduleType": "2",
+          "schedulePeriodId": "A",
+          "schedulePeriodName": "上午",
+          "timeInfo": [
+            {
+              "regId": "10412218",
+              "timeInterval": "1774571400000-1774573200000",
+              "totalNumber": "7",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 08:30:00",
+              "endTime": "2026-03-27 09:00:00"
+            },
+            {
+              "regId": "10412218",
+              "timeInterval": "1774573200000-1774575000000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 09:00:00",
+              "endTime": "2026-03-27 09:30:00"
+            },
+            {
+              "regId": "10412218",
+              "timeInterval": "1774575000000-1774576800000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 09:30:00",
+              "endTime": "2026-03-27 10:00:00"
+            },
+            {
+              "regId": "10412218",
+              "timeInterval": "1774576800000-1774578600000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 10:00:00",
+              "endTime": "2026-03-27 10:30:00"
+            },
+            {
+              "regId": "10412218",
+              "timeInterval": "1774578600000-1774580400000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 10:30:00",
+              "endTime": "2026-03-27 11:00:00"
+            },
+            {
+              "regId": "10412218",
+              "timeInterval": "1774580400000-1774582200000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 11:00:00",
+              "endTime": "2026-03-27 11:30:00"
+            },
+            {
+              "regId": "10412218",
+              "timeInterval": "1774582200000-1774583100000",
+              "totalNumber": "3",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 11:30:00",
+              "endTime": "2026-03-27 11:45:00"
+            }
+          ],
+          "prompt": null
+        }
+      ]
+    },
+    {
+      "doctorImgBase64": null,
+      "registAmt": null,
+      "feeType": null,
+      "scheduleStatusAll": "4",
+      "doctorSort": 0,
+      "titleCode": "",
+      "branchId": "02",
+      "deptId": "0001102103101",
+      "deptName": "产科专家门诊",
+      "doctorId": "5105",
+      "doctorName": "林琳",
+      "doctorTitle": "副主任医师",
+      "doctorDesc": "擅长妊娠期高血压疾病、前置胎盘、多胎妊娠、胎盘植入、妊娠期糖尿病等产科合并症及并发症的管理及救治。在危急重症救治方面有丰富的经验。",
+      "scheduleDate": "2026-03-27",
+      "scheduleDayOfWeek": "星期五",
+      "fee": "26.0",
+      "scheduleInfo2s": [
+        {
+          "consultationRoom": "V1",
+          "scheduleRemainNumber": "0",
+          "scheduleStatus": "4",
+          "scheduleId": "156553",
+          "scheduleType": "2",
+          "schedulePeriodId": "A",
+          "schedulePeriodName": "上午",
+          "timeInfo": [
+            {
+              "regId": "10409835",
+              "timeInterval": "1774571400000-1774573200000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 08:30:00",
+              "endTime": "2026-03-27 09:00:00"
+            },
+            {
+              "regId": "10409835",
+              "timeInterval": "1774573200000-1774575000000",
+              "totalNumber": "5",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 09:00:00",
+              "endTime": "2026-03-27 09:30:00"
+            },
+            {
+              "regId": "10409835",
+              "timeInterval": "1774575000000-1774576800000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 09:30:00",
+              "endTime": "2026-03-27 10:00:00"
+            },
+            {
+              "regId": "10409835",
+              "timeInterval": "1774576800000-1774578600000",
+              "totalNumber": "5",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 10:00:00",
+              "endTime": "2026-03-27 10:30:00"
+            },
+            {
+              "regId": "10409835",
+              "timeInterval": "1774578600000-1774580400000",
+              "totalNumber": "5",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 10:30:00",
+              "endTime": "2026-03-27 11:00:00"
+            },
+            {
+              "regId": "10409835",
+              "timeInterval": "1774580400000-1774582200000",
+              "totalNumber": "6",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 11:00:00",
+              "endTime": "2026-03-27 11:30:00"
+            },
+            {
+              "regId": "10409835",
+              "timeInterval": "1774582200000-1774583100000",
+              "totalNumber": "2",
+              "remainNumber": "0",
+              "beginTime": "2026-03-27 11:30:00",
+              "endTime": "2026-03-27 11:45:00"
+            }
+          ],
+          "prompt": null
+        }
+      ]
+    }
+  ]
+}

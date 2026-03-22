@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  watch-doctor:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: watch-doctor:latest
+    container_name: watch-doctor
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - TZ=Asia/Shanghai
+    volumes:
+      - watch-doctor-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/monitor/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  watch-doctor-data:
+    driver: local
