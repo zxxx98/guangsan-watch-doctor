@@ -41,7 +41,8 @@ scheduleMonitorRouter.delete('/results', (req: Request, res: Response) => {
 
 scheduleMonitorRouter.get('/config', (req: Request, res: Response) => {
   const feishuWebhook = monitorService.getFeishuWebhook();
-  res.json({ feishuWebhook });
+  const departments = monitorService.getDepartments();
+  res.json({ feishuWebhook, departments });
 });
 
 scheduleMonitorRouter.post('/config', (req: Request, res: Response) => {

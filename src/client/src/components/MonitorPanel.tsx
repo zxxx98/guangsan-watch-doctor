@@ -17,6 +17,7 @@ import {
   Checkbox,
   Descriptions,
   Input,
+  Select,
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -26,7 +27,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { monitorApi } from '../api/monitor';
-import { MonitorStatus, MonitorResult, ScheduleMonitorConfig, DEPARTMENTS } from '../types';
+import { MonitorStatus, MonitorResult, ScheduleMonitorConfig, Department } from '../types';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -78,6 +79,7 @@ const MonitorPanel: React.FC = () => {
   });
   const [results, setResults] = useState<MonitorResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   const fetchStatus = async () => {
     try {
@@ -102,6 +104,9 @@ const MonitorPanel: React.FC = () => {
       const configData = await monitorApi.getConfig();
       if (configData.feishuWebhook) {
         form.setFieldsValue({ feishuWebhook: configData.feishuWebhook });
+      }
+      if (configData.departments) {
+        setDepartments(configData.departments);
       }
     } catch {
       console.log('获取配置失败');
@@ -128,7 +133,7 @@ const MonitorPanel: React.FC = () => {
         startTime: startDate,
         endTime: endDate,
         interval: (values.interval || 1) * 60 * 1000,
-        deptIds: values.deptIds || DEPARTMENTS.map(d => d.deptId),
+        deptIds: values.deptIds || departments.map(d => d.deptId),
         feishuWebhook: values.feishuWebhook,
       };
       setLoading(true);
@@ -334,15 +339,21 @@ const MonitorPanel: React.FC = () => {
               <Form.Item
                 name="deptIds"
                 label="监听门诊"
-                initialValue={DEPARTMENTS.map(d => d.deptId)}
+                rules={[{ required: true, message: '请选择至少一个门诊' }]}
               >
-                <Checkbox.Group disabled={status.isRunning}>
-                  {DEPARTMENTS.map(dept => (
-                    <Checkbox key={dept.deptId} value={dept.deptId}>
+                <Select
+                  mode="multiple"
+                  placeholder="请选择监听门诊"
+                  disabled={status.isRunning}
+                  style={{ width: 200 }}
+                  allowClear
+                >
+                  {departments.map(dept => (
+                    <Select.Option key={dept.deptId} value={dept.deptId}>
                       {dept.name}
-                    </Checkbox>
+                    </Select.Option>
                   ))}
-                </Checkbox.Group>
+                </Select>
               </Form.Item>
               <Form.Item
                 name="feishuWebhook"

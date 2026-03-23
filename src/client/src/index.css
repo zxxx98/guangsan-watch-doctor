@@ -15,3 +15,66 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .ant-card {
+    margin-bottom: 16px;
+  }
+  
+  .ant-form-inline .ant-form-item {
+    display: block;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  
+  .ant-form-inline .ant-form-item-control {
+    width: 100%;
+  }
+  
+  .ant-statistic {
+    margin-bottom: 16px;
+  }
+  
+  .ant-row > .ant-col {
+    margin-bottom: 16px;
+  }
+  
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-table th,
+  .ant-table td {
+    padding: 8px;
+  }
+  
+  .ant-btn {
+    margin-bottom: 8px;
+  }
+  
+  .ant-space {
+    display: block;
+  }
+  
+  .ant-space > * {
+    display: block;
+    margin-bottom: 8px;
+  }
+  
+  .ant-select {
+    width: 100% !important;
+  }
+  
+  .ant-input {
+    width: 100% !important;
+  }
+  
+  .ant-input-number {
+    width: 100% !important;
+  }
+  
+  .ant-picker {
+    width: 100% !important;
+  }
+}

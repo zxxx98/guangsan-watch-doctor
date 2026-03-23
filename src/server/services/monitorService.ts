@@ -12,6 +12,7 @@ const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
 interface PersistedConfig {
   feishuWebhook?: string;
+  departments?: Department[];
 }
 
 function loadPersistedConfig(): PersistedConfig {
@@ -186,6 +187,11 @@ class MonitorService {
     this.feishuWebhook = webhook;
   }
 
+  getDepartments(): Department[] {
+    const config = loadPersistedConfig();
+    return config.departments || DEPARTMENTS;
+  }
+
   private updateNextCheckTime(): void {
     if (this.isRunning) {
       this.nextCheckTime = new Date(Date.now() + this.intervalMs).toISOString();
@@ -356,7 +362,8 @@ class MonitorService {
 
   private async queryAllDepartments(): Promise<MonitorResult> {
     const timestamp = new Date().toISOString();
-    const departments = DEPARTMENTS.filter(d => this.deptIds.includes(d.deptId));
+    const config = loadPersistedConfig();
+    const departments = (config.departments || DEPARTMENTS).filter(d => this.deptIds.includes(d.deptId));
     
     const results: { 
       success: boolean; 

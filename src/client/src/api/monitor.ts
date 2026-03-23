@@ -1,4 +1,4 @@
-import { ScheduleMonitorConfig, MonitorStatus, MonitorResult, ApiResponse } from '../types';
+import { ScheduleMonitorConfig, MonitorStatus, MonitorResult, ApiResponse, Department } from '../types';
 
 const API_BASE = '/api/monitor';
 
@@ -38,7 +38,7 @@ export const monitorApi = {
     return response.json();
   },
 
-  async getConfig(): Promise<{ feishuWebhook: string | null }> {
+  async getConfig(): Promise<{ feishuWebhook: string | null, departments: Department[] }> {
     const response = await fetch(`${API_BASE}/config`);
     return response.json();
   },
