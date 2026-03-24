@@ -1,36 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Card,
-  Form,
-  DatePicker,
   Button,
-  Space,
-  message,
-  Statistic,
-  Row,
+  Card,
   Col,
+  DatePicker,
+  Empty,
+  Form,
+  Grid,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
   Table,
   Tag,
   Typography,
-  Divider,
-  InputNumber,
-  Checkbox,
-  Descriptions,
-  Input,
-  Select,
+  message,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
-  PlayCircleOutlined,
-  StopOutlined,
-  ReloadOutlined,
+  CalendarOutlined,
   ClearOutlined,
+  ClockCircleOutlined,
+  NotificationOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { monitorApi } from '../api/monitor';
-import { MonitorStatus, MonitorResult, ScheduleMonitorConfig, Department } from '../types';
+import { Department, MonitorResult, MonitorStatus, ScheduleMonitorConfig } from '../types';
 
-const { Title, Text } = Typography;
+const { Title, Paragraph, Text } = Typography;
 const { RangePicker } = DatePicker;
+const { useBreakpoint } = Grid;
+
+interface TimeSlotDetail {
+  beginTime: string;
+  endTime: string;
+  remainNumber: number;
+  totalNumber: number;
+}
+
+interface ScheduleDetail {
+  period: string;
+  room: string;
+  remainNumber: number;
+  totalNumber: number;
+  timeSlots: TimeSlotDetail[];
+}
 
 interface DoctorDetail {
   id: string;
@@ -40,18 +58,14 @@ interface DoctorDetail {
   date: string;
   remainNumber: number;
   totalNumber: number;
-  schedules: {
-    period: string;
-    room: string;
-    remainNumber: number;
-    totalNumber: number;
-    timeSlots: {
-      beginTime: string;
-      endTime: string;
-      remainNumber: number;
-      totalNumber: number;
-    }[];
-  }[];
+  schedules: ScheduleDetail[];
+}
+
+interface DepartmentSummary {
+  name: string;
+  doctors: number;
+  remainNumber: number;
+  totalNumber: number;
 }
 
 interface MonitorResultData {
@@ -59,17 +73,170 @@ interface MonitorResultData {
   summary: {
     totalRemain: number;
     totalNumber: number;
-    departments: {
-      name: string;
-      doctors: number;
-      remainNumber: number;
-      totalNumber: number;
-    }[];
+    departments: DepartmentSummary[];
   };
 }
 
+interface SummaryStatCardProps {
+  label: string;
+  value: string;
+  hint?: string;
+  accent?: 'success' | 'danger' | 'neutral';
+  icon: React.ReactNode;
+}
+
+interface MobileResultCardProps {
+  result: MonitorResult;
+}
+
+interface ResultMetric {
+  remain: number;
+  total: number;
+}
+
+const formatDateTime = (value: string | null, template = 'YYYY-MM-DD HH:mm:ss') =>
+  value ? dayjs(value).format(template) : '-';
+
+const getResultData = (result: MonitorResult): MonitorResultData | null => {
+  if (!result.success || !result.data) {
+    return null;
+  }
+
+  return result.data as MonitorResultData;
+};
+
+const getMetricTone = (remain: number) => (remain > 0 ? 'success' : 'danger');
+
+const SummaryStatCard: React.FC<SummaryStatCardProps> = ({ label, value, hint, accent = 'neutral', icon }) => (
+  <Card className={`summary-card summary-card--${accent}`} bordered={false}>
+    <div className="summary-card__icon">{icon}</div>
+    <div className="summary-card__body">
+      <Text className="summary-card__label">{label}</Text>
+      <Text className="summary-card__value">{value}</Text>
+      {hint ? <Text className="summary-card__hint">{hint}</Text> : null}
+    </div>
+  </Card>
+);
+
+const DepartmentSummaryList: React.FC<{ departments: DepartmentSummary[] }> = ({ departments }) => {
+  if (departments.length === 0) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无科室汇总" />;
+  }
+
+  return (
+    <div className="department-summary-list">
+      {departments.map((department) => (
+        <div className="department-summary-item" key={department.name}>
+          <Text className="department-summary-item__name">{department.name}</Text>
+          <Text className={`metric-text metric-text--${getMetricTone(department.remainNumber)}`}>
+            {department.remainNumber}/{department.totalNumber}
+          </Text>
+          <Text className="department-summary-item__meta">{department.doctors} 位医生</Text>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const DoctorScheduleCard: React.FC<{ doctor: DoctorDetail }> = ({ doctor }) => (
+  <Card size="small" className="doctor-card" bordered={false}>
+    <div className="doctor-card__header">
+      <div>
+        <Text className="doctor-card__name">{doctor.name}</Text>
+        <Text className="doctor-card__title">{doctor.title || '未填写职称'}</Text>
+      </div>
+      <Text className={`metric-pill metric-pill--${getMetricTone(doctor.remainNumber)}`}>
+        {doctor.remainNumber}/{doctor.totalNumber}
+      </Text>
+    </div>
+    <div className="doctor-card__meta">
+      <Text>{doctor.deptName}</Text>
+      <Text>{doctor.date}</Text>
+    </div>
+
+    <div className="schedule-list">
+      {doctor.schedules.map((schedule) => (
+        <div className="schedule-card" key={`${doctor.id}-${schedule.period}-${schedule.room}`}>
+          <div className="schedule-card__header">
+            <Text className="schedule-card__title">
+              {schedule.period} · {schedule.room}
+            </Text>
+            <Text className={`metric-text metric-text--${getMetricTone(schedule.remainNumber)}`}>
+              {schedule.remainNumber}/{schedule.totalNumber}
+            </Text>
+          </div>
+          <div className="time-slot-list">
+            {schedule.timeSlots.map((slot) => (
+              <div className="time-slot-item" key={`${doctor.id}-${schedule.period}-${slot.beginTime}`}>
+                <div>
+                  <Text className="time-slot-item__time">
+                    {slot.beginTime} - {slot.endTime}
+                  </Text>
+                </div>
+                <Text className={`metric-text metric-text--${getMetricTone(slot.remainNumber)}`}>
+                  {slot.remainNumber}/{slot.totalNumber}
+                </Text>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </Card>
+);
+
+const MobileResultCard: React.FC<MobileResultCardProps> = ({ result }) => {
+  const data = getResultData(result);
+  const metric: ResultMetric | null = data
+    ? {
+        remain: data.summary.totalRemain,
+        total: data.summary.totalNumber,
+      }
+    : null;
+
+  return (
+    <Card className="result-card-mobile" bordered={false}>
+      <div className="result-card-mobile__header">
+        <div>
+          <Text className="result-card-mobile__time">{formatDateTime(result.timestamp)}</Text>
+          <div className="result-card-mobile__tags">
+            <Tag color={result.success ? 'success' : 'error'}>{result.success ? '成功' : '失败'}</Tag>
+            {metric ? (
+              <Tag color={metric.remain > 0 ? 'processing' : 'default'}>
+                号源 {metric.remain}/{metric.total}
+              </Tag>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <Paragraph className="result-card-mobile__message">{result.message || '暂无消息'}</Paragraph>
+
+      {data ? (
+        <details className="result-card-mobile__details">
+          <summary>查看详情</summary>
+          <div className="result-card-mobile__content">
+            <DepartmentSummaryList departments={data.summary.departments} />
+            <div className="doctor-card-list">
+              {data.doctors.length > 0 ? (
+                data.doctors.map((doctor) => <DoctorScheduleCard doctor={doctor} key={doctor.id} />)
+              ) : (
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无医生详情" />
+              )}
+            </div>
+          </div>
+        </details>
+      ) : null}
+    </Card>
+  );
+};
+
 const MonitorPanel: React.FC = () => {
   const [form] = Form.useForm();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.xl;
+
   const [status, setStatus] = useState<MonitorStatus>({
     isRunning: false,
     startTime: null,
@@ -133,7 +300,7 @@ const MonitorPanel: React.FC = () => {
         startTime: startDate,
         endTime: endDate,
         interval: (values.interval || 1) * 60 * 1000,
-        deptIds: values.deptIds || departments.map(d => d.deptId),
+        deptIds: values.deptIds || departments.map((department) => department.deptId),
         feishuWebhook: values.feishuWebhook,
       };
       setLoading(true);
@@ -178,116 +345,116 @@ const MonitorPanel: React.FC = () => {
     }
   };
 
-  const columns = [
-    {
-      title: '时间',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      width: 180,
-      render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
-    },
-    {
-      title: '状态',
-      dataIndex: 'success',
-      key: 'success',
-      width: 80,
-      render: (success: boolean) => (
-        <Tag color={success ? 'success' : 'error'}>
-          {success ? '成功' : '失败'}
-        </Tag>
-      ),
-    },
-    {
-      title: '剩余号源',
-      key: 'remainNumber',
-      width: 100,
-      render: (_: unknown, record: MonitorResult) => {
-        if (!record.success || !record.data) return '-';
-        const data = record.data as MonitorResultData;
-        return (
-          <Text strong style={{ color: data.summary.totalRemain > 0 ? '#3f8600' : '#cf1322' }}>
-            {data.summary.totalRemain}/{data.summary.totalNumber}
-          </Text>
-        );
+  const resultColumns: ColumnsType<MonitorResult> = useMemo(
+    () => [
+      {
+        title: '时间',
+        dataIndex: 'timestamp',
+        key: 'timestamp',
+        width: 220,
+        render: (text: string) => <Text>{formatDateTime(text)}</Text>,
       },
-    },
-    {
-      title: '消息',
-      dataIndex: 'message',
-      key: 'message',
-    },
-  ];
+      {
+        title: '状态',
+        dataIndex: 'success',
+        key: 'success',
+        width: 96,
+        render: (success: boolean) => <Tag color={success ? 'success' : 'error'}>{success ? '成功' : '失败'}</Tag>,
+      },
+      {
+        title: '剩余号源',
+        key: 'remainNumber',
+        width: 120,
+        render: (_value, record) => {
+          const data = getResultData(record);
+          if (!data) {
+            return <Text type="secondary">-</Text>;
+          }
+
+          return (
+            <Text className={`metric-text metric-text--${getMetricTone(data.summary.totalRemain)}`}>
+              {data.summary.totalRemain}/{data.summary.totalNumber}
+            </Text>
+          );
+        },
+      },
+      {
+        title: '消息',
+        dataIndex: 'message',
+        key: 'message',
+        render: (value: string) => <div className="table-message-cell">{value || '-'}</div>,
+      },
+    ],
+    []
+  );
 
   const expandedRowRender = (record: MonitorResult) => {
-    if (!record.success || !record.data) return null;
-    const data = record.data as MonitorResultData;
+    const data = getResultData(record);
+    if (!data) {
+      return null;
+    }
 
-    const doctorColumns = [
+    const doctorColumns: ColumnsType<DoctorDetail> = [
       { title: '医生', dataIndex: 'name', key: 'name', width: 100 },
-      { title: '职称', dataIndex: 'title', key: 'title', width: 100 },
-      { title: '门诊', dataIndex: 'deptName', key: 'deptName', width: 150 },
+      { title: '职称', dataIndex: 'title', key: 'title', width: 120 },
+      { title: '门诊', dataIndex: 'deptName', key: 'deptName', width: 180 },
       { title: '日期', dataIndex: 'date', key: 'date', width: 120 },
-      { 
-        title: '剩余/总数', 
+      {
+        title: '剩余/总数',
         key: 'numbers',
-        width: 100,
-        render: (_: unknown, doctor: DoctorDetail) => (
-          <Text style={{ color: doctor.remainNumber > 0 ? '#3f8600' : '#999' }}>
+        width: 110,
+        render: (_value, doctor) => (
+          <Text className={`metric-text metric-text--${getMetricTone(doctor.remainNumber)}`}>
             {doctor.remainNumber}/{doctor.totalNumber}
           </Text>
-        )
+        ),
       },
     ];
 
     const expandedDoctorRender = (doctor: DoctorDetail) => {
-      const timeSlotColumns = [
-        { title: '时段', dataIndex: 'period', key: 'period', width: 80 },
-        { title: '诊室', dataIndex: 'room', key: 'room', width: 80 },
-        { title: '开始时间', dataIndex: 'beginTime', key: 'beginTime', width: 150 },
-        { title: '结束时间', dataIndex: 'endTime', key: 'endTime', width: 150 },
-        { 
-          title: '剩余/总数', 
-          key: 'numbers',
-          render: (_: unknown, slot: { remainNumber: number; totalNumber: number }) => (
-            <Text style={{ color: slot.remainNumber > 0 ? '#3f8600' : '#999' }}>
-              {slot.remainNumber}/{slot.totalNumber}
-            </Text>
-          )
-        },
-      ];
-
-      const allTimeSlots = doctor.schedules.flatMap(schedule => 
-        schedule.timeSlots.map(slot => ({
+      const allTimeSlots = doctor.schedules.flatMap((schedule) =>
+        schedule.timeSlots.map((slot) => ({
           period: schedule.period,
           room: schedule.room,
-          ...slot
+          ...slot,
         }))
       );
 
+      const timeSlotColumns: ColumnsType<(TimeSlotDetail & { period: string; room: string })> = [
+        { title: '时段', dataIndex: 'period', key: 'period', width: 80 },
+        { title: '诊室', dataIndex: 'room', key: 'room', width: 100 },
+        { title: '开始时间', dataIndex: 'beginTime', key: 'beginTime', width: 140 },
+        { title: '结束时间', dataIndex: 'endTime', key: 'endTime', width: 140 },
+        {
+          title: '剩余/总数',
+          key: 'numbers',
+          width: 110,
+          render: (_value, slot) => (
+            <Text className={`metric-text metric-text--${getMetricTone(slot.remainNumber)}`}>
+              {slot.remainNumber}/{slot.totalNumber}
+            </Text>
+          ),
+        },
+      ];
+
       return (
         <Table
+          className="inner-table"
           dataSource={allTimeSlots}
           columns={timeSlotColumns}
           pagination={false}
           size="small"
-          rowKey={(record) => `${record.period}-${record.beginTime}`}
+          rowKey={(item) => `${item.period}-${item.beginTime}-${item.room}`}
+          scroll={{ x: 620 }}
         />
       );
     };
 
     return (
-      <div style={{ padding: '12px' }}>
-        <Descriptions bordered size="small" column={4} style={{ marginBottom: 16 }}>
-          {data.summary.departments.map(dept => (
-            <Descriptions.Item key={dept.name} label={dept.name}>
-              <Text style={{ color: dept.remainNumber > 0 ? '#3f8600' : '#999' }}>
-                {dept.remainNumber}/{dept.totalNumber} ({dept.doctors}位医生)
-              </Text>
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
-        
+      <div className="expanded-panel">
+        <DepartmentSummaryList departments={data.summary.departments} />
         <Table
+          className="inner-table"
           dataSource={data.doctors}
           columns={doctorColumns}
           pagination={false}
@@ -297,198 +464,264 @@ const MonitorPanel: React.FC = () => {
             expandedRowRender: expandedDoctorRender,
             rowExpandable: (doctor) => doctor.schedules.length > 0,
           }}
+          scroll={{ x: 760 }}
         />
       </div>
     );
   };
 
+  const selectedDepartmentCount = Form.useWatch('deptIds', form)?.length || 0;
+  const resultSummary = useMemo(() => {
+    return results.reduce(
+      (summary, result) => {
+        if (result.success) {
+          summary.successCount += 1;
+        } else {
+          summary.failureCount += 1;
+        }
+
+        const data = getResultData(result);
+        if (data) {
+          summary.totalRemain += data.summary.totalRemain;
+        }
+
+        return summary;
+      },
+      { successCount: 0, failureCount: 0, totalRemain: 0 }
+    );
+  }, [results]);
+
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <Title level={2}>医院排班系统监听服务</Title>
-      <Divider />
+    <div className="monitor-page">
+      <div className="monitor-page__hero">
+        <div className="monitor-page__hero-copy">
+          <Text className="eyebrow">医院号源监控</Text>
+          <Title className="monitor-page__title">排班监听面板</Title>
+          <Paragraph className="monitor-page__subtitle">
+            为桌面与移动端重新整理监控流程，配置、状态和结果在一个界面内完成，查看更快，触达更稳。
+          </Paragraph>
+        </div>
+        <div className="monitor-page__hero-meta">
+          <Text>已配置门诊 {departments.length} 个</Text>
+          <Text>已选门诊 {selectedDepartmentCount || departments.length || 0} 个</Text>
+          <Text>结果记录 {results.length} 条</Text>
+        </div>
+      </div>
 
-      <Row gutter={[16, 16]}>
-        <Col span={24}>
-          <Card title="监听配置" bordered={false}>
-            <Form form={form} layout="inline">
-              <Form.Item
-                name="timeRange"
-                label="监听时间范围"
-                rules={[{ required: true, message: '请选择时间范围' }]}
-              >
-                <RangePicker
-                  showTime
-                  format="YYYY-MM-DD HH:mm:ss"
-                  disabled={status.isRunning}
-                />
-              </Form.Item>
-              <Form.Item
-                name="interval"
-                label="轮询频率(分钟)"
-                initialValue={1}
-                rules={[{ required: true, message: '请输入轮询频率' }]}
-              >
-                <InputNumber
-                  min={1}
-                  max={60}
-                  step={1}
-                  disabled={status.isRunning}
-                  style={{ width: 100 }}
-                />
-              </Form.Item>
-              <Form.Item
-                name="deptIds"
-                label="监听门诊"
-                rules={[{ required: true, message: '请选择至少一个门诊' }]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="请选择监听门诊"
-                  disabled={status.isRunning}
-                  style={{ width: 200 }}
-                  allowClear
+      <section className="monitor-section">
+        <div className="section-heading">
+          <div>
+            <Text className="section-heading__eyebrow">Overview</Text>
+            <Title level={4} className="section-heading__title">
+              监控状态总览
+            </Title>
+          </div>
+        </div>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <SummaryStatCard
+              label="运行状态"
+              value={status.isRunning ? '运行中' : '已停止'}
+              hint={status.isRunning ? '监听任务正在执行轮询' : '当前没有活动任务'}
+              accent={status.isRunning ? 'success' : 'danger'}
+              icon={<NotificationOutlined />}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <SummaryStatCard
+              label="监听时间范围"
+              value={
+                status.startTime && status.endTime
+                  ? `${dayjs(status.startTime).format('MM-DD')} 至 ${dayjs(status.endTime).format('MM-DD')}`
+                  : '-'
+              }
+              hint={`起始 ${formatDateTime(status.startTime, 'YYYY-MM-DD')}`}
+              icon={<CalendarOutlined />}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <SummaryStatCard
+              label="下次检查"
+              value={formatDateTime(status.nextCheckTime, 'HH:mm:ss')}
+              hint={`上次检查 ${formatDateTime(status.lastCheckTime, 'HH:mm:ss')}`}
+              icon={<ClockCircleOutlined />}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <SummaryStatCard
+              label="结果概览"
+              value={`${resultSummary.totalRemain} 个剩余号源`}
+              hint={`成功 ${resultSummary.successCount} / 失败 ${resultSummary.failureCount}`}
+              accent={resultSummary.totalRemain > 0 ? 'success' : 'neutral'}
+              icon={<ReloadOutlined />}
+            />
+          </Col>
+        </Row>
+      </section>
+
+      <section className="monitor-section">
+        <div className="section-heading">
+          <div>
+            <Text className="section-heading__eyebrow">Config</Text>
+            <Title level={4} className="section-heading__title">
+              监听配置
+            </Title>
+          </div>
+          <Text className="section-heading__meta">
+            {status.isRunning ? '运行中将锁定配置项，避免中途变更。' : '建议至少选择一个门诊，并设置合理轮询频率。'}
+          </Text>
+        </div>
+
+        <Card className="panel-card" bordered={false}>
+          <Form form={form} layout="vertical">
+            <Row gutter={[16, 8]}>
+              <Col xs={24} md={12} xl={10}>
+                <Form.Item
+                  name="timeRange"
+                  label="监听时间范围"
+                  rules={[{ required: true, message: '请选择时间范围' }]}
                 >
-                  {departments.map(dept => (
-                    <Select.Option key={dept.deptId} value={dept.deptId}>
-                      {dept.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item
-                name="feishuWebhook"
-                label="飞书通知地址"
-                extra="可选，填写飞书机器人Webhook地址"
-              >
-                <Input
-                  placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
-                  disabled={status.isRunning}
-                  style={{ width: 350 }}
-                />
-              </Form.Item>
-              <Form.Item>
-                <Space>
-                  <Button
-                    type="primary"
-                    icon={<PlayCircleOutlined />}
-                    onClick={handleStart}
-                    loading={loading}
+                  <RangePicker
+                    className="full-width-control"
+                    showTime
+                    format="YYYY-MM-DD HH:mm:ss"
                     disabled={status.isRunning}
-                  >
-                    启动监听
-                  </Button>
-                  <Button
-                    danger
-                    icon={<StopOutlined />}
-                    onClick={handleStop}
-                    loading={loading}
-                    disabled={!status.isRunning}
-                  >
-                    停止监听
-                  </Button>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      fetchStatus();
-                      fetchResults();
-                    }}
-                  >
-                    刷新状态
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Card>
-        </Col>
+                    size={isMobile ? 'large' : 'middle'}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} md={8} xl={4}>
+                <Form.Item
+                  name="interval"
+                  label="轮询频率（分钟）"
+                  initialValue={1}
+                  rules={[{ required: true, message: '请输入轮询频率' }]}
+                >
+                  <InputNumber
+                    className="full-width-control"
+                    min={1}
+                    max={60}
+                    step={1}
+                    disabled={status.isRunning}
+                    size={isMobile ? 'large' : 'middle'}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12} xl={10}>
+                <Form.Item
+                  name="deptIds"
+                  label="监听门诊"
+                  rules={[{ required: true, message: '请选择至少一个门诊' }]}
+                >
+                  <Select
+                    className="full-width-control"
+                    mode="multiple"
+                    placeholder="请选择监听门诊"
+                    disabled={status.isRunning}
+                    allowClear
+                    size={isMobile ? 'large' : 'middle'}
+                    options={departments.map((department) => ({
+                      label: department.name,
+                      value: department.deptId,
+                    }))}
+                    maxTagCount={isMobile ? 1 : isTablet ? 2 : 3}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item
+                  name="feishuWebhook"
+                  label="飞书通知地址"
+                  extra="可选，填写飞书机器人 Webhook 地址"
+                >
+                  <Input
+                    className="full-width-control"
+                    placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+                    disabled={status.isRunning}
+                    size={isMobile ? 'large' : 'middle'}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-        <Col span={24}>
-          <Card title="监听状态" bordered={false}>
-            <Row gutter={16}>
-              <Col span={6}>
-                <Statistic
-                  title="运行状态"
-                  value={status.isRunning ? '运行中' : '已停止'}
-                  valueStyle={{
-                    color: status.isRunning ? '#3f8600' : '#cf1322',
+            <div className={`action-bar ${isMobile ? 'action-bar--mobile' : ''}`}>
+              <Space wrap size={[12, 12]} className="action-bar__actions">
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  onClick={handleStart}
+                  loading={loading}
+                  disabled={status.isRunning}
+                  size={isMobile ? 'large' : 'middle'}
+                >
+                  启动监听
+                </Button>
+                <Button
+                  danger
+                  icon={<StopOutlined />}
+                  onClick={handleStop}
+                  loading={loading}
+                  disabled={!status.isRunning}
+                  size={isMobile ? 'large' : 'middle'}
+                >
+                  停止监听
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => {
+                    fetchStatus();
+                    fetchResults();
                   }}
-                />
-              </Col>
-              <Col span={6}>
-                <Statistic
-                  title="起始时间"
-                  value={
-                    status.startTime
-                      ? dayjs(status.startTime).format('YYYY-MM-DD HH:mm:ss')
-                      : '-'
-                  }
-                  valueStyle={{ fontSize: '16px' }}
-                />
-              </Col>
-              <Col span={6}>
-                <Statistic
-                  title="结束时间"
-                  value={
-                    status.endTime
-                      ? dayjs(status.endTime).format('YYYY-MM-DD HH:mm:ss')
-                      : '-'
-                  }
-                  valueStyle={{ fontSize: '16px' }}
-                />
-              </Col>
-              <Col span={6}>
-                <Statistic
-                  title="下次检查"
-                  value={
-                    status.nextCheckTime
-                      ? dayjs(status.nextCheckTime).format('HH:mm:ss')
-                      : '-'
-                  }
-                  valueStyle={{ fontSize: '16px' }}
-                />
-              </Col>
-            </Row>
-            <Divider />
-            <Row gutter={16}>
-              <Col span={12}>
-                <Text type="secondary">上次检查时间：</Text>
-                <Text>
-                  {status.lastCheckTime
-                    ? dayjs(status.lastCheckTime).format('YYYY-MM-DD HH:mm:ss')
-                    : '-'}
-                </Text>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
+                  size={isMobile ? 'large' : 'middle'}
+                >
+                  刷新状态
+                </Button>
+              </Space>
+            </div>
+          </Form>
+        </Card>
+      </section>
 
-        <Col span={24}>
-          <Card
-            title="监听结果"
-            bordered={false}
-            extra={
-              <Button
-                icon={<ClearOutlined />}
-                onClick={handleClearResults}
-                size="small"
-              >
-                清空结果
-              </Button>
-            }
-          >
+      <section className="monitor-section">
+        <div className="section-heading section-heading--results">
+          <div>
+            <Text className="section-heading__eyebrow">Results</Text>
+            <Title level={4} className="section-heading__title">
+              监听结果
+            </Title>
+          </div>
+          <Button icon={<ClearOutlined />} onClick={handleClearResults} size={isMobile ? 'middle' : 'small'}>
+            清空结果
+          </Button>
+        </div>
+
+        {results.length === 0 ? (
+          <Card className="panel-card panel-card--empty" bordered={false}>
+            <Empty description="暂无监听结果，启动监听后将在这里展示最新记录" />
+          </Card>
+        ) : isMobile ? (
+          <div className="result-card-list">
+            {results.map((result) => (
+              <MobileResultCard key={result.timestamp} result={result} />
+            ))}
+          </div>
+        ) : (
+          <Card className="panel-card" bordered={false}>
             <Table
+              className="results-table"
               dataSource={results}
-              columns={columns}
+              columns={resultColumns}
               rowKey="timestamp"
               pagination={{ pageSize: 10 }}
-              size="small"
               expandable={{
                 expandedRowRender,
-                rowExpandable: (record) => !!(record.success && record.data),
+                rowExpandable: (record) => !!getResultData(record),
               }}
+              scroll={{ x: 920 }}
             />
           </Card>
-        </Col>
-      </Row>
+        )}
+      </section>
     </div>
   );
 };

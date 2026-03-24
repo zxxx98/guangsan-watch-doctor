@@ -1,9 +1,3 @@
 {
-  "feishuWebhook": "https://open.feishu.cn/open-apis/bot/v2/hook/6b10f756-4d18-40a2-8e74-1fd701df4d3f",
-  "departments": [
-    { "deptId": "0001102103101", "name": "产科专家门诊(黄埔)", "branchId": "02" },
-    { "deptId": "0001102103102", "name": "产科普通门诊(黄埔)", "branchId": "02" },
-    { "deptId": "0001102102101", "name": "妇科普通门诊(黄埔)", "branchId": "02" },
-    { "deptId": "0001102102102", "name": "妇科专家门诊(黄埔)", "branchId": "02" }
-  ]
+  "feishuWebhook": "https://open.feishu.cn/open-apis/bot/v2/hook/6b10f756-4d18-40a2-8e74-1fd701df4d3f"
 }
