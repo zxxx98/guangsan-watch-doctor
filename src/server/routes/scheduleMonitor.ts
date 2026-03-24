@@ -10,45 +10,62 @@ scheduleMonitorRouter.post('/start', (req: Request, res: Response) => {
   if (!config.startTime || !config.endTime) {
     res.status(400).json({
       success: false,
-      message: '请提供起始时间和结束时间',
+      message: '请提供开始时间和结束时间',
     });
     return;
   }
 
-  const result = monitorService.start(config);
-  res.json(result);
+  res.json(monitorService.start(config));
 });
 
-scheduleMonitorRouter.post('/stop', (req: Request, res: Response) => {
-  const result = monitorService.stop();
-  res.json(result);
+scheduleMonitorRouter.post('/stop', (_req: Request, res: Response) => {
+  res.json(monitorService.stop());
 });
 
-scheduleMonitorRouter.get('/status', (req: Request, res: Response) => {
-  const status = monitorService.getStatus();
-  res.json(status);
+scheduleMonitorRouter.get('/status', (_req: Request, res: Response) => {
+  res.json(monitorService.getStatus());
 });
 
-scheduleMonitorRouter.get('/results', (req: Request, res: Response) => {
-  const results = monitorService.getResults();
-  res.json(results);
+scheduleMonitorRouter.get('/results', (_req: Request, res: Response) => {
+  res.json(monitorService.getResults());
 });
 
-scheduleMonitorRouter.delete('/results', (req: Request, res: Response) => {
+scheduleMonitorRouter.delete('/results', (_req: Request, res: Response) => {
   monitorService.clearResults();
   res.json({ success: true, message: '结果已清空' });
 });
 
-scheduleMonitorRouter.get('/config', (req: Request, res: Response) => {
-  const feishuWebhook = monitorService.getFeishuWebhook();
-  const departments = monitorService.getDepartments();
-  res.json({ feishuWebhook, departments });
+scheduleMonitorRouter.get('/config', (_req: Request, res: Response) => {
+  res.json({
+    feishuWebhook: monitorService.getFeishuWebhook(),
+    departments: monitorService.getDepartments(),
+  });
 });
 
 scheduleMonitorRouter.post('/config', (req: Request, res: Response) => {
-  const { feishuWebhook } = req.body;
-  if (feishuWebhook) {
-    monitorService.setFeishuWebhook(feishuWebhook);
+  const { feishuWebhook } = req.body as { feishuWebhook?: string };
+  if (typeof feishuWebhook === 'string' && feishuWebhook.trim()) {
+    monitorService.setFeishuWebhook(feishuWebhook.trim());
   }
+
   res.json({ success: true, message: '配置已保存' });
+});
+
+scheduleMonitorRouter.post('/departments/sync', async (_req: Request, res: Response) => {
+  try {
+    const departments = await monitorService.syncDepartments();
+    res.json({
+      success: true,
+      message: `已同步 ${departments.length} 个科室`,
+      count: departments.length,
+      departments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : '同步科室列表失败',
+      count: 0,
+      departments: [],
+    });
+  }
 });

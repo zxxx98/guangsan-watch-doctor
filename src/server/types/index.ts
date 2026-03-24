@@ -35,6 +35,16 @@ export interface MonitorResult {
   data?: unknown;
 }
 
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface DepartmentSyncResponse extends ApiResponse {
+  count: number;
+  departments: Department[];
+}
+
 export interface ScheduleTimeInfo {
   regId: string;
   timeInterval: string;

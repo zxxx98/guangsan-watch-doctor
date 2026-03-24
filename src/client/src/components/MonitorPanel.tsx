@@ -246,6 +246,7 @@ const MonitorPanel: React.FC = () => {
   });
   const [results, setResults] = useState<MonitorResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncingDepartments, setSyncingDepartments] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
 
   const fetchStatus = async () => {
@@ -342,6 +343,23 @@ const MonitorPanel: React.FC = () => {
       }
     } catch {
       message.error('清空失败');
+    }
+  };
+
+  const handleSyncDepartments = async () => {
+    setSyncingDepartments(true);
+    try {
+      const response = await monitorApi.syncDepartments();
+      if (response.success) {
+        setDepartments(response.departments);
+        message.success(response.message);
+      } else {
+        message.error(response.message);
+      }
+    } catch {
+      message.error('同步科室列表失败');
+    } finally {
+      setSyncingDepartments(false);
     }
   };
 
@@ -668,9 +686,19 @@ const MonitorPanel: React.FC = () => {
                 </Button>
                 <Button
                   icon={<ReloadOutlined />}
+                  onClick={handleSyncDepartments}
+                  loading={syncingDepartments}
+                  disabled={status.isRunning}
+                  size={isMobile ? 'large' : 'middle'}
+                >
+                  同步科室列表
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
                   onClick={() => {
                     fetchStatus();
                     fetchResults();
+                    fetchConfig();
                   }}
                   size={isMobile ? 'large' : 'middle'}
                 >
