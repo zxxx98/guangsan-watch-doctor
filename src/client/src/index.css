@@ -521,6 +521,10 @@ body::before {
   box-shadow: none;
 }
 
+.ant-input-number-handler-wrap {
+  display: none;
+}
+
 @media (max-width: 1023px) {
   .monitor-page__hero {
     grid-template-columns: 1fr;

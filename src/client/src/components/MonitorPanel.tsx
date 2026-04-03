@@ -300,7 +300,7 @@ const MonitorPanel: React.FC = () => {
       const config: ScheduleMonitorConfig = {
         startTime: startDate,
         endTime: endDate,
-        interval: (values.interval || 1) * 60 * 1000,
+        interval: (values.interval || 0.5) * 60 * 1000,
         deptIds: values.deptIds || departments.map((department) => department.deptId),
         feishuWebhook: values.feishuWebhook,
       };
@@ -586,7 +586,7 @@ const MonitorPanel: React.FC = () => {
             </Title>
           </div>
           <Text className="section-heading__meta">
-            {status.isRunning ? '运行中将锁定配置项，避免中途变更。' : '建议至少选择一个门诊，并设置合理轮询频率。'}
+            {status.isRunning ? '运行中将锁定配置项，避免中途变更。' : '建议至少选择一个门诊；轮询频率最低支持 30 秒。'}
           </Text>
         </div>
 
@@ -611,15 +611,17 @@ const MonitorPanel: React.FC = () => {
               <Col xs={24} sm={12} md={8} xl={4}>
                 <Form.Item
                   name="interval"
-                  label="轮询频率（分钟）"
-                  initialValue={1}
+                  label="轮询频率"
+                  initialValue={0.5}
+                  extra="输入 0.5 表示 30 秒，1 表示 1 分钟。"
                   rules={[{ required: true, message: '请输入轮询频率' }]}
                 >
                   <InputNumber
                     className="full-width-control"
-                    min={1}
+                    min={0.5}
                     max={60}
-                    step={1}
+                    step={0.5}
+                    controls={false}
                     disabled={status.isRunning}
                     size={isMobile ? 'large' : 'middle'}
                   />

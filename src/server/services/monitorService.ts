@@ -9,12 +9,19 @@ import {
   DEPARTMENTS,
   Department,
 } from '../types';
-import { type DeptApiResponse, extractLeafDepartments, loadPersistedConfig, savePersistedConfig } from './departmentSync';
+import {
+  type DeptApiResponse,
+  extractLeafDepartments,
+  loadPersistedConfig,
+  savePersistedConfig,
+  sortDepartmentsByPriority,
+} from './departmentSync';
 
 const APP_ID = '5C7A82A336CB969A121BC3CE74B02CF8';
 const APP_SECRET = '8F531809185EFF5CB090F58B6ECA69EE';
 const API_BASE_URL = 'https://xcx.gy3y.cn/lw/OutPatient';
 const DEFAULT_BRANCH_ID = '02';
+const MIN_INTERVAL_MS = 30 * 1000;
 const DEFAULT_OPENID = 'o6irP5QtKpGjoIC2svm3ca0P0dBA';
 
 const DATA_DIR = process.env.NODE_ENV === 'production' ? '/app/data' : path.join(process.cwd(), 'src');
@@ -138,7 +145,7 @@ class MonitorService {
   private isRunning = false;
   private startTime: string | null = null;
   private endTime: string | null = null;
-  private intervalMs = 60000;
+  private intervalMs = MIN_INTERVAL_MS;
   private intervalId: NodeJS.Timeout | null = null;
   private lastCheckTime: string | null = null;
   private nextCheckTime: string | null = null;
@@ -154,7 +161,7 @@ class MonitorService {
 
     this.startTime = config.startTime;
     this.endTime = config.endTime;
-    this.intervalMs = config.interval || 60000;
+    this.intervalMs = Math.max(config.interval || MIN_INTERVAL_MS, MIN_INTERVAL_MS);
     this.deptIds = config.deptIds || this.getDepartments().map((department) => department.deptId);
     if (config.openid) {
       this.openid = config.openid;
@@ -223,7 +230,8 @@ class MonitorService {
 
   getDepartments(): Department[] {
     const persistedDepartments = getPersistedConfig().departments;
-    return persistedDepartments && persistedDepartments.length > 0 ? persistedDepartments : DEPARTMENTS;
+    const departments = persistedDepartments && persistedDepartments.length > 0 ? persistedDepartments : DEPARTMENTS;
+    return sortDepartmentsByPriority(departments);
   }
 
   async syncDepartments(): Promise<Department[]> {
@@ -252,8 +260,9 @@ class MonitorService {
       throw new Error('获取科室列表失败: 未解析到叶子科室');
     }
 
-    updatePersistedConfig({ departments });
-    return departments;
+    const sortedDepartments = sortDepartmentsByPriority(departments);
+    updatePersistedConfig({ departments: sortedDepartments });
+    return sortedDepartments;
   }
 
   private updateNextCheckTime(): void {

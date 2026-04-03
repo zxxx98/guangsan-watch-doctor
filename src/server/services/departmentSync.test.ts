@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   extractLeafDepartments,
   mergePersistedConfig,
+  sortDepartmentsByPriority,
   type DeptApiResponse,
   type PersistedConfig,
 } from './departmentSync';
@@ -90,4 +91,55 @@ test('mergePersistedConfig preserves departments while updating webhook', () => 
 
   assert.equal(merged.feishuWebhook, 'https://example.com/updated-hook');
   assert.deepEqual(merged.departments, [{ deptId: 'leaf-a1', name: 'Leaf A1', branchId: '02' }]);
+});
+
+test('sortDepartmentsByPriority keeps obstetrics expert and general clinics at the front', () => {
+  const sorted = sortDepartmentsByPriority([
+    { deptId: '0001102102101', name: 'Gynecology General', branchId: '02' },
+    { deptId: '0001102103102', name: 'Obstetrics General', branchId: '02' },
+    { deptId: '0001102102102', name: 'Gynecology Expert', branchId: '02' },
+    { deptId: '0001102103101', name: 'Obstetrics Expert', branchId: '02' },
+  ]);
+
+  assert.deepEqual(
+    sorted.map((department) => department.deptId),
+    ['0001102103101', '0001102103102', '0001102102101', '0001102102102']
+  );
+});
+
+test('extractLeafDepartments applies priority sorting after syncing', () => {
+  const response: DeptApiResponse = {
+    code: 200,
+    msg: 'success',
+    data: [
+      {
+        branchId: '02',
+        departments: [
+          {
+            branchId: '02',
+            departmentId: '0001102102101',
+            departmentName: 'Gynecology General',
+            children: [],
+          },
+          {
+            branchId: '02',
+            departmentId: '0001102103102',
+            departmentName: 'Obstetrics General',
+            children: [],
+          },
+          {
+            branchId: '02',
+            departmentId: '0001102103101',
+            departmentName: 'Obstetrics Expert',
+            children: [],
+          },
+        ],
+      },
+    ],
+  };
+
+  assert.deepEqual(
+    extractLeafDepartments(response).map((department) => department.deptId),
+    ['0001102103101', '0001102103102', '0001102102101']
+  );
 });

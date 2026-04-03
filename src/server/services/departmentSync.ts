@@ -25,6 +25,8 @@ export interface DeptApiResponse {
   data: DeptApiBranch[];
 }
 
+const PRIORITY_DEPARTMENT_IDS = ['0001102103101', '0001102103102'];
+
 export function mergePersistedConfig(
   current: PersistedConfig,
   patch: Partial<PersistedConfig>
@@ -61,6 +63,27 @@ export function savePersistedConfig(configFile: string, patch: Partial<Persisted
   return merged;
 }
 
+export function sortDepartmentsByPriority(departments: Department[]): Department[] {
+  return [...departments].sort((left, right) => {
+    const leftPriority = PRIORITY_DEPARTMENT_IDS.indexOf(left.deptId);
+    const rightPriority = PRIORITY_DEPARTMENT_IDS.indexOf(right.deptId);
+
+    if (leftPriority === -1 && rightPriority === -1) {
+      return 0;
+    }
+
+    if (leftPriority === -1) {
+      return 1;
+    }
+
+    if (rightPriority === -1) {
+      return -1;
+    }
+
+    return leftPriority - rightPriority;
+  });
+}
+
 export function extractLeafDepartments(response: DeptApiResponse): Department[] {
   const leafDepartments = new Map<string, Department>();
 
@@ -84,5 +107,7 @@ export function extractLeafDepartments(response: DeptApiResponse): Department[] 
     (branch.departments || []).forEach((department) => visitNode(department, branch.branchId || ''));
   });
 
-  return Array.from(leafDepartments.values()).sort((left, right) => left.deptId.localeCompare(right.deptId));
+  return sortDepartmentsByPriority(
+    Array.from(leafDepartments.values()).sort((left, right) => left.deptId.localeCompare(right.deptId))
+  );
 }
