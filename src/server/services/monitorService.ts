@@ -16,6 +16,7 @@ import {
   savePersistedConfig,
   sortDepartmentsByPriority,
 } from './departmentSync';
+import { filterDoctorNotifications, shouldStopMonitoring } from './monitorFilters';
 
 const APP_ID = '5C7A82A336CB969A121BC3CE74B02CF8';
 const APP_SECRET = '8F531809185EFF5CB090F58B6ECA69EE';
@@ -153,6 +154,8 @@ class MonitorService {
   private deptIds: string[] = [];
   private openid = DEFAULT_OPENID;
   private feishuWebhook: string | null = null;
+  private targetDoctorName = '';
+  private stopOnAvailable = true;
 
   start(config: ScheduleMonitorConfig): { success: boolean; message: string } {
     if (this.isRunning) {
@@ -163,6 +166,8 @@ class MonitorService {
     this.endTime = config.endTime;
     this.intervalMs = Math.max(config.interval || MIN_INTERVAL_MS, MIN_INTERVAL_MS);
     this.deptIds = config.deptIds || this.getDepartments().map((department) => department.deptId);
+    this.targetDoctorName = config.targetDoctorName?.trim() || '';
+    this.stopOnAvailable = config.stopOnAvailable !== false;
     if (config.openid) {
       this.openid = config.openid;
     }
@@ -367,12 +372,14 @@ class MonitorService {
         if (data.summary.totalRemain > 0) {
           await this.sendFeishuNotification(data.doctors);
 
-          if (this.intervalId) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
+          if (shouldStopMonitoring({ stopOnAvailable: this.stopOnAvailable, totalRemain: data.summary.totalRemain })) {
+            if (this.intervalId) {
+              clearInterval(this.intervalId);
+              this.intervalId = null;
+            }
+            this.isRunning = false;
+            this.nextCheckTime = null;
           }
-          this.isRunning = false;
-          this.nextCheckTime = null;
         }
       }
     } catch (error) {
@@ -429,10 +436,12 @@ class MonitorService {
       });
     });
 
+    const doctorFilterTip = this.targetDoctorName ? `，医生筛选“${this.targetDoctorName}”` : '';
+
     return {
       timestamp,
       success: true,
-      message: `查询成功，共监控 ${departments.length} 个门诊，${totalDoctors} 位医生，剩余 ${totalRemain} 个号源`,
+      message: `查询成功，共监控 ${departments.length} 个门诊，${totalDoctors} 位医生，剩余 ${totalRemain} 个号源${doctorFilterTip}`,
       data: {
         doctors: allDoctors,
         summary: {
@@ -626,10 +635,14 @@ class MonitorService {
       });
     });
 
+    const filteredDoctors = filterDoctorNotifications(doctorDetails, this.targetDoctorName);
+    const filteredTotalRemain = filteredDoctors.reduce((sum, doctor) => sum + doctor.remainNumber, 0);
+    const filteredTotalNumber = filteredDoctors.reduce((sum, doctor) => sum + doctor.totalNumber, 0);
+
     return {
-      totalRemain,
-      totalNumber,
-      doctors: doctorDetails,
+      totalRemain: this.targetDoctorName ? filteredTotalRemain : totalRemain,
+      totalNumber: this.targetDoctorName ? filteredTotalNumber : totalNumber,
+      doctors: filteredDoctors,
     };
   }
 }

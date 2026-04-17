@@ -12,6 +12,7 @@ import {
   Row,
   Select,
   Space,
+  Switch,
   Table,
   Tag,
   Typography,
@@ -303,6 +304,8 @@ const MonitorPanel: React.FC = () => {
         interval: (values.interval || 0.5) * 60 * 1000,
         deptIds: values.deptIds || departments.map((department) => department.deptId),
         feishuWebhook: values.feishuWebhook,
+        targetDoctorName: values.targetDoctorName?.trim(),
+        stopOnAvailable: values.stopOnAvailable !== false,
       };
       setLoading(true);
       const response = await monitorApi.start(config);
@@ -646,6 +649,32 @@ const MonitorPanel: React.FC = () => {
                     }))}
                     maxTagCount={isMobile ? 1 : isTablet ? 2 : 3}
                   />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12} xl={10}>
+                <Form.Item
+                  name="targetDoctorName"
+                  label="指定监听医生"
+                  extra="可选，填写后按医生姓名模糊匹配，仅匹配到该医生有号时通知"
+                >
+                  <Input
+                    className="full-width-control"
+                    placeholder="例如：黄蓓"
+                    disabled={status.isRunning}
+                    allowClear
+                    size={isMobile ? 'large' : 'middle'}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12} md={8} xl={4}>
+                <Form.Item
+                  name="stopOnAvailable"
+                  label="有号后自动停止"
+                  valuePropName="checked"
+                  initialValue
+                  extra="关闭后会继续按频率监听"
+                >
+                  <Switch disabled={status.isRunning} checkedChildren="停止" unCheckedChildren="继续" />
                 </Form.Item>
               </Col>
               <Col xs={24}>

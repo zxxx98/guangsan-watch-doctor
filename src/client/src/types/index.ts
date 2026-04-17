@@ -17,6 +17,8 @@ export interface ScheduleMonitorConfig {
   interval?: number;
   deptIds?: string[];
   feishuWebhook?: string;
+  targetDoctorName?: string;
+  stopOnAvailable?: boolean;
 }
 
 export interface MonitorStatus {
